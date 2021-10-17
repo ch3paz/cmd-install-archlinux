@@ -1,0 +1,5 @@
+**/.vscode
+**/*.code-workspace
+**/testcode.py
+**/snippets.txt
+**/vars_*.yml

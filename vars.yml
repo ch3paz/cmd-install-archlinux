@@ -1,0 +1,47 @@
+---
+##
+# As this playbook is planned to run only via AWX/Tower.
+# I won't hardcode variables here much. But if someone 
+# would like to run this with an 
+# "prefilled-vars-template" this could be done here.
+##
+
+##
+# Vars related to the KVM-HOST:
+##
+kvm_hostname: awx_survey  # e.g. monster, hostname of the KVM-host
+disk_pool: awx_survey     # e.g. monster_hosts, the pool used on the KVM-host
+nic: awx_survey           # e.g. enp42s0, the NIC used on the KVM-host (i have a macvtap on this device)
+virt_type: kvm            # kvm or qemu
+
+##
+# Vars related to the KVM-GUEST
+##
+initial_root_pw_vm: awx_survey    # The PW for root which is set on the new VM, should be in a vault if used
+guest_hostname: awx_survey        # DNS-hostname for the new VM
+kvm_name: "{{ guest_hostname }}"  # Name in virsh,virt-manager and also the disk-name
+memory: 2048                      # e.g. 2048 for 2GB RAM
+vcpu: 2                           # e.g. 2 for two vCPU (see maxvcpu)
+maxvcpu: 4                        # e.g. 4 (maximal 4 which could be assigned via hotplug)
+sound: none                       # e.g. none, nobody needs sound in a VM
+disk_size: 15                     # e.g. 15 for 15GB disksize
+disk_format: qcow2                # e.g. qcow2, in rare cases 'raw'
+disk_cache: writeback             # e.g. writeback
+disk_driver: threads              # e.g. threads
+disk_blockdevice: "/dev/vda"      # e.g. /dev/vda, the disk visible in the new VM
+  ##
+  # Disksizes for the volumes. This playbook creates LVs for
+  # - /
+  # - swap
+  # Be careful to not exceed the disksize defined in "{{ disk_size }}" above,
+  # else the playbook will fail.
+  ##
+disk_size_vol_slash: 15G
+disk_size_vol_swap: 250M
+
+##
+# Vars related to the INSTALL-ENVIRONMENT
+##
+boot_iso: awx_survey            # e.g. /mnt/nfsmount/cubox/vm/iso/archlinux-remote-prep-2021.01.01-x86_64.iso
+booted_iso_hostname: awx_survey # initial hostname of the booted install-iso, here "arch-remote-prep"
+initial_root_pw_iso: awx_survey # roots password on the booted ISO, should be in a vault if used

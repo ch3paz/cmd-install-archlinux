@@ -1,0 +1,2 @@
+Server = https://mirror.lost-byte.de/$repo/os/$arch
+Server = https://mirror.netcologne.de/archlinux/$repo/os/$arch

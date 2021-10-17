@@ -1,0 +1,350 @@
+---
+- hosts: grp_linux
+  become: yes
+  serial: 1
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+
+    - name: Refresh pool > "{{ disk_pool }}"
+      virt_pool:
+        name: "{{ disk_pool }}"
+        command: refresh
+      tags: disable_for_testing
+
+    - name: List disknames in pool > "{{ disk_pool }}"
+      shell: 'virsh vol-list --pool "{{ disk_pool }}" | cut -d " " -f2 | cut -d "." -f1 | tail -n +3'
+      register: disknames
+      changed_when: "disknames.rc != 0"
+      tags:
+        - disable_for_testing
+        - skip_ansible_lint
+
+    - name: DEBUG::disknames
+      debug:
+        msg: "{{ disknames }}"
+      tags: debug
+
+    - name: Fail task if disk already exists
+      fail:
+        msg: "Disk already in pool!"
+      when: disknames.stdout is search(guest_hostname)
+      tags: disable_for_testing
+
+    - name: Create VM with KVM-name "{{ guest_hostname }}" and corresponding disk-name
+      command: >
+               virt-install
+               --noautoconsole
+               --name "{{ guest_hostname }}"
+               --boot uefi
+               --memory="{{ memory }}"
+               --vcpus="{{ vcpu }}",maxvcpus="{{ maxvcpu }}"
+               --cpu host
+               --sound "{{ sound }}"
+               --cdrom="{{ boot_iso }}"
+               --os-variant archlinux
+               --disk pool="{{ disk_pool }}",size="{{ disk_size }}",format="{{ disk_format }}",cache="{{ disk_cache }}",driver.io="{{ disk_driver }}"
+               --network type=direct,source="{{ nic }}",source.mode=bridge,model.type=virtio
+               --virt-type "{{ virt_type }}"
+      when: disknames.stdout is not search(guest_hostname) # Maybe remove this line, maybe not...
+      tags: disable_for_testing
+
+    - name: Wait until the install-ISO on "{{ booted_iso_hostname }}" is booted
+      wait_for:
+        host: "{{ booted_iso_hostname }}"
+        port: 22
+        delay: 30 # lower than 30s doesn't make sense for me
+        connect_timeout: 5
+        sleep: 5
+        state: started
+        timeout: 300
+      tags: disable_for_testing
+
+# Attention, stay in the block here (!) as this is all delegated
+# to the new host (vm).
+# If doing it wrong you __may repartition your KVM-host!__
+
+    - name: These tasks are delegated to the install-ISO
+      block:
+        - name: Gather facts from "{{ booted_iso_hostname }}"
+          setup:
+          tags: disable_for_testing
+
+        - name: Copy mirrorlist in place on "{{ booted_iso_hostname }}"
+          copy:
+            src: files/mirrorlist
+            dest: /etc/pacman.d/mirrorlist
+            owner: root
+            group: root
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Update pacmans package-database
+          pacman:
+            update_cache: yes
+          tags: disable_for_testing
+
+        - name: Create first primary partition for UEFI > "{{ disk_blockdevice }}1"
+          parted:
+            device: "{{ disk_blockdevice }}"
+            label: gpt
+            number: 1
+            part_end: 512MB
+            flags: [ esp ]
+            state: present
+          tags: disable_for_testing
+
+        - name: Create second partition for LVM > "{{ disk_blockdevice }}2"
+          parted:
+            device: "{{ disk_blockdevice }}"
+            label: gpt
+            number: 2
+            part_start: 512MB
+            part_end: "100%"
+            flags: [ lvm ]
+            state: present
+          tags: disable_for_testing
+
+        # Don't wonder about stuff like: "{{ guest_hostname | replace('-','_') }}"
+        # LVM-mapper would put an "--" in the devicename if
+        # the guest_hostname contains "-" and this sucks ;)
+
+        - name: Create volume group for LVM > "vg.{{ guest_hostname }}"
+          lvg:
+            vg: "vg.{{ guest_hostname | replace('-','_') }}"
+            pvs: "{{ disk_blockdevice }}2"
+          tags: disable_for_testing
+
+        - name: Create logical volumes for /,var,tmp,swap,home
+          lvol:
+            vg: "vg.{{ guest_hostname | replace('-','_') }}"
+            lv: "lv.{{ guest_hostname | replace('-','_') }}.{{ item.volname }}"
+            size: "{{ item.volsize }}"
+          with_items:
+            - {volname: 'slash',volsize: '{{ disk_size_vol_slash }}'}
+            - {volname: 'swap',volsize: '{{ disk_size_vol_swap }}'}
+          tags: disable_for_testing
+
+        - name: Create vfat-fs on > "{{ disk_blockdevice }}1"
+          filesystem:
+            fstype: vfat
+            dev: "{{ disk_blockdevice }}1"
+          tags: disable_for_testing
+
+        - name: Create XFS on all relevant logical volumes
+          filesystem:
+            fstype: xfs
+            dev: "/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.{{ item.volname }}"
+          with_items:
+            - {volname: 'slash'}
+          tags: disable_for_testing
+
+        - name: Mount / beneathe /mnt
+          mount:
+            path: /mnt
+            src: "/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.slash"
+            fstype: xfs
+            state: mounted
+          tags: disable_for_testing
+
+        - name: Mount "{{ disk_blockdevice }}1" beneathe /mnt/boot
+          mount:
+            path: /mnt/boot
+            src: "{{ disk_blockdevice }}1"
+            fstype: vfat
+            state: mounted
+          tags: disable_for_testing
+
+        - name: Create swap
+          filesystem:
+            fstype: swap
+            dev: "/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.swap"
+          tags: disable_for_testing
+
+        - name: Enable swap
+          command: swapon "/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.swap"
+          tags: disable_for_testing
+
+        - name: Run pacstrap/install the base-system, this may take a while...
+          command:
+            argv:
+              - pacstrap
+              - /mnt
+              - base
+              - base-devel
+              - dhcpcd
+              - linux
+              - linux-firmware
+              - lvm2
+              - btrfs-progs
+              - xfsprogs
+              - xfsdump
+              - efibootmgr
+              - dosfstools
+              - gptfdisk
+              - vim
+              - openssh
+              - python
+          tags: disable_for_testing
+
+        - name: Copy mirrorlist in place for "{{ guest_hostname }}"
+          copy:
+            src: files/mirrorlist
+            dest: /mnt/etc/pacman.d/mirrorlist
+            owner: root
+            group: root
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Generate fstab for "{{ guest_hostname }}"
+          shell: genfstab -p /mnt >> /mnt/etc/fstab
+          tags: disable_for_testing
+
+        - name: Set hostname to > "{{ guest_hostname }}"
+          blockinfile:
+            path: /mnt/etc/hostname
+            block: |
+              {{ guest_hostname }}
+            create: yes
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Set locale to german in locale.conf
+          blockinfile:
+            path: /mnt/etc/locale.conf
+            block: |
+              LANG=de_DE.UTF-8
+            create: yes
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Set locale for locale-gen
+          blockinfile:
+            path: /mnt/etc/locale.gen
+            block: |
+              de_DE.UTF-8 UTF-8
+              de_DE ISO-8859-1
+              de_DE@euro ISO-8859-15
+              en_US.UTF-8
+            create: yes
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Set locale in vconsole.conf
+          blockinfile:
+            path: /mnt/etc/vconsole.conf
+            block: |
+              KEYMAP=de-latin1
+            create: yes
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Set localtime to Europe/Berlin
+          command: arch-chroot /mnt ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+          tags: disable_for_testing
+
+        - name: Run locale-gen
+          command: arch-chroot /mnt locale-gen
+          tags: disable_for_testing
+
+        - name: Adding lvm2 to HOOKS in mkinicpio.conf
+          lineinfile:
+            path: /mnt/etc/mkinitcpio.conf
+            regexp: '^HOOKS'
+            line: HOOKS=(base udev autodetect modconf block lvm2 filesystems keyboard fsck)
+          tags: disable_for_testing
+
+        - name: Run mkinitcpio
+          command: arch-chroot /mnt mkinitcpio -p linux
+          tags: disable_for_testing
+
+        - name: Set password for root
+          shell: echo "root:{{ initial_root_pw_vm }}" | arch-chroot /mnt chpasswd
+          tags: disable_for_testing
+
+        - name: Install bootloader
+          command: arch-chroot /mnt bootctl install
+          tags: disable_for_testing
+
+        - name: Templating bootloader-uefi-configs
+          template:
+            src: "{{ item.src }}"
+            dest: "{{ item.dest }}"
+            mode: 0644
+          with_items:
+            - {src: 'files/arch-uefi.conf.j2',dest: '/mnt/boot/loader/entries/arch-uefi.conf'}
+            - {src: 'files/arch-uefi-fallback.conf.j2',dest: '/mnt/boot/loader/entries/arch-uefi-fallback.conf'}
+          tags: disable_for_testing
+
+        - name: Copy loader.conf
+          copy:
+            src: files/loader.conf
+            dest: /mnt/boot/loader/
+            mode: 0644
+          tags: disable_for_testing
+
+        - name: Update bootloader
+          command: arch-chroot /mnt bootctl update
+          tags: disable_for_testing
+
+        - name: Modify dhcpcd.conf to send/register hostname in DNS/DHCP-server
+          lineinfile:
+            path: /mnt/etc/dhcpcd.conf
+            state: present
+            backrefs: yes
+            regexp: '^#hostname'
+            line: hostname
+          tags: disable_for_testing
+
+        - name: Modify sshd_config to enable root login with passwd
+          lineinfile:
+            path: /mnt/etc/ssh/sshd_config
+            state: present
+            backrefs: yes
+            regexp: '^#PermitRootLogin prohibit-password'
+            line: 'PermitRootLogin yes'
+          tags: disable_for_testing
+
+        - name: Enable dhcpcd on all interfaces
+          command: arch-chroot /mnt systemctl enable dhcpcd.service
+          tags: disable_for_testing
+
+        - name: Enable sshd on boot
+          command: arch-chroot /mnt systemctl enable sshd.service
+          tags: disable_for_testing
+
+      vars:
+        ansible_ssh_user: root
+        ansible_ssh_pass: "{{ initial_root_pw_iso }}"
+        # ansible_host_key_checking: False
+        # ansible_ssh_host_key_checking: False
+        # ansible_paramiko_host_key_checking: False
+        # host_key_checking: False
+        # ssh_host_key_checking: False
+        # paramiko_host_key_checking: False
+      delegate_to: "{{ booted_iso_hostname }}"
+
+    - name: Stop new VM for restart
+      command: >
+               virsh
+               shutdown
+               --domain "{{ guest_hostname }}"
+      tags:
+        - disable_for_testing
+        - skip_ansible_lint
+
+    - name: Pause for 30s until the VM is powered off
+      pause:
+        seconds: 30
+
+    - name: Start new VM
+      command: >
+               virsh
+               start
+               --domain "{{ guest_hostname }}"
+      tags:
+        - disable_for_testing
+        - skip_ansible_lint
