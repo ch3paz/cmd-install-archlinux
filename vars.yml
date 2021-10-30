@@ -5,6 +5,7 @@
 initial_root_pw: changeme       # The PW for root which is set on the new machine, better to be in a vault if used
 machine_hostname: my-newhost-01 # DNS-hostname for the new machine
 disk_blockdevice: "/dev/vda"    # e.g. /dev/vda, the disk visible in the livesystem
+
 ##
 # Disksizes for the volumes/partitions. The playbook creates LVs for
 # - /

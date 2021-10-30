@@ -1,27 +1,27 @@
 # Description
 
-Installs and configures an Archlinux-machine as an UEFI-install.
+Installs and configures an Archlinux-machine as UEFI-install.
 
 This is an stripped down playbook which i previously have written to
 automagic create+boot+install an KVM-host on libvirt.
 
-It will **_kill everything_** on the device noted in `disk_blockdevice` in the 'vars.yml`!
+**Warning:** It will **_kill everything_** on the device noted in `disk_blockdevice` in the `vars.yml`
+
+* Defaults to german locale, if you need to change the locale you have to adapt the corresponding lines in the `main.yml`
+* Some packages, which i preferre in an basic-install, are installed also. See `main.yml` for details
 
 # Basic usage
 
 The idea here is:
-* to boot an archiso
-* install ansible in booted the live system to run the playbook
-* clone this playbook from your $VCS (Gitlab, Bitbucket, Github...)
-* copy vars_example.yml to vars.yml (or create a different copy and link it to vars.yml)
-* run the playbook, let it do all the anoying stuff and be happy with an new Archlinux-machine (see "Example" below)
-
-# Prerequisites
-
-* Take a look in the vars.yml, adapt it (maybe save your config to a new file (e.g.: vars_newhostname.yml) and link this vars-file to vars.yml, e.g.: `ln -s vars_newhostname.yml vars.yml`
-* Run the playbook (see "Example" below)
+* Boot an archiso
+* Install needed tooling into the booted the live system to run the playbook
+* Clone this playbook from your $VCS (Gitlab, Bitbucket, Github...)
+* Adapt vars.yml
+* Run the playbook (let it do all the boring stuff and be happy with your new Archlinux-machine)
 
 # Example
+
+## SSH into archiso
 
 To make copy&paste easier change roots password and SSH into the booted archiso:
 
@@ -34,23 +34,36 @@ passwd: password updated successfully
 
 then
 
+## If 'archiso' doens't work in your network, use the ip of the livesystem
+
 ~~~
-# If 'archiso' doens't work in your network, use the ip of the livesystem
 ssh root@archiso
 ~~~
 
 In the archiso-environment run:
 
+## Resize / as it is too small for ansible+sshpass+git
+
 ~~~
-# Resize / as it is too small for ansible+sshpass+git
 mount -o remount,size=2G /run/archiso/cowspace
+~~~
 
-# Install ansible+sshpass+git 
+## Install ansible+sshpass+git 
+~~~
 pacman -Sy && pacman -S ansible sshpass git --noconfirm
+~~~
 
-# Clone the playbook, adapt the URL to your needs
+## Clone the playbook, adapt the URL to your needs
+~~~
 git clone https://gitlab.chepnet.lan/chepaz/cmd-install-archlinux-onkvm.git
+~~~
 
-# Run the playbook
+## Prerequisites
+
+* Take a look into `main.yml` if you need to change locale or packages (or maybe more ;) )
+* Take a look in the `vars.yml`, adapt it (maybe save your config to a new file, e.g. `vars_newhostname.yml` and link this vars-file to `vars.yml`: `ln -s vars_newhostname.yml vars.yml`)
+
+## Run the playbook
+~~~
 cd cmd-install-archlinux-onkvm && ansible-playbook -i inventory -l archiso main.yml -k
 ~~~
