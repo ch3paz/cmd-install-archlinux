@@ -7,14 +7,16 @@ automagic create+boot+install an KVM-host on libvirt.
 
 **Warning:** It will **_kill everything_** on the device noted in `disk_blockdevice` in the `vars.yml`
 
+## Remark
+
 * Defaults to german locale, if you need to change the locale you have to adapt the corresponding lines in the `main.yml`
-* Some packages, which i preferre in an basic-install, are installed also. See `main.yml` for details
+* Some packages, which i prefere for an basic-install, are installed also. See `main.yml` for details
 
 # Basic usage
 
 The idea here is:
 * Boot an archiso
-* Install needed tooling into the booted the live system to run the playbook
+* Install needed tooling into the booted live system to run the playbook
 * Clone this playbook from your $VCS (Gitlab, Bitbucket, Github...)
 * Adapt vars.yml
 * Run the playbook (let it do all the boring stuff and be happy with your new Archlinux-machine)
