@@ -5,7 +5,7 @@ Installs and configures an Archlinux-machine as an UEFI-install.
 This is an stripped down playbook which i previously have written to
 automagic create+boot+install an KVM-host on libvirt.
 
-It will _kill everything_ on the device noted in `disk_blockdevice` in the 'vars.yml`!
+It will **_kill everything_** on the device noted in `disk_blockdevice` in the 'vars.yml`!
 
 # Basic usage
 
