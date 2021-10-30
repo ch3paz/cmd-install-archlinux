@@ -25,6 +25,7 @@ The idea here is:
 In the archiso-environment run:
 
 ~~~
+mount -o remount,size=2G /run/archiso/cowspace 
 pacman -Sy && pacman -S ansible
 git clone https://gitlab.chepnet.lan/chepaz/cmd-install-archlinux-onkvm.git
 ansible-playbook -i inventory -l archiso main.yml 
