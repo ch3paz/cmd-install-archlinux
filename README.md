@@ -2,7 +2,7 @@
 
 Installs and configures an Archlinux-machine as UEFI-install.
 
-This is an stripped down playbook which i previously have written to automagic create+boot+install an KVM-host on libvirt. The intention was to fire up Archlinux very quick, very dirty, for testing purposes.
+This is an stripped down playbook which i previously had written to automagic create+boot+install an KVM-host on libvirt. The intention was to fire up Archlinux very quick, very dirty, for testing purposes.
 
 **Warning:** It will **_kill everything_** on the device noted in `disk_blockdevice` in the `vars.yml`
 
