@@ -10,6 +10,7 @@ This is an stripped down playbook which i previously had written to automagic cr
 
 * Defaults to german locale, if you need to change the locale you have to adapt the corresponding lines in the `main.yml`
 * Some packages, which i prefere for an basic-install, are installed also. See `main.yml` for details
+* The mirrorlist needs to be adapted to your location
 
 # Basic usage
 

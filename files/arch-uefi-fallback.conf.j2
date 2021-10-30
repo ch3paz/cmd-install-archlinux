@@ -1,4 +1,4 @@
 title    Arch Linux Fallback
 linux    /vmlinuz-linux
 initrd   /initramfs-linux-fallback.img
-options  root=/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.slash rw resume=/dev/mapper/vg.{{ guest_hostname | replace('-','_') }}-lv.{{ guest_hostname | replace('-','_') }}.swap
+options  root=/dev/mapper/vg.{{ machine_hostname | replace('-','_') }}-lv.{{ machine_hostname | replace('-','_') }}.slash rw resume=/dev/mapper/vg.{{ machine_hostname | replace('-','_') }}-lv.{{ machine_hostname | replace('-','_') }}.swap
