@@ -13,5 +13,5 @@ disk_blockdevice: "/dev/vda"    # e.g. /dev/vda, the disk visible in the livesys
 # and creates an boot-partition with 512M by default, so '/'+swap+boot need to fit in your harddrives size.
 # E.g.; Harddrive has 15G you may not exceed the 15G in summary.
 ##
-disk_size_vol_slash: 14.5G
+disk_size_vol_slash: 14.4G
 disk_size_vol_swap: 250M
