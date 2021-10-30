@@ -23,6 +23,10 @@ The idea here is:
 
 # Example
 
+## Boot the archiso
+
+Just boot archiso
+
 ## SSH into archiso
 
 To make copy&paste easier change roots password and SSH into the booted archiso:
@@ -34,38 +38,39 @@ Retype new password:
 passwd: password updated successfully
 ~~~
 
-then
-
-## If 'archiso' doens't work in your network, use the ip of the livesystem
+then, from your client, ssh into archiso:
 
 ~~~
 ssh root@archiso
 ~~~
 
-In the archiso-environment run:
+**Hint:** If the hostname 'archiso' doesn't work in your network, use the ip of the livesystem
 
-## Resize / as it is too small for ansible+sshpass+git
+## In the archiso-environment run:
+
+### Resize / as it is too small for ansible+sshpass+git
 
 ~~~
 mount -o remount,size=2G /run/archiso/cowspace
 ~~~
 
-## Install ansible+sshpass+git 
+### Install ansible+sshpass+git 
 ~~~
 pacman -Sy && pacman -S ansible sshpass git --noconfirm
 ~~~
 
-## Clone the playbook, adapt the URL to your needs
+### Clone the playbook, adapt the URL to your needs
 ~~~
 git clone https://gitlab.chepnet.lan/chepaz/cmd-install-archlinux-onkvm.git
 ~~~
 
-## Prerequisites
+### Prerequisites
 
 * Take a look into `main.yml` if you need to change locale or packages (or maybe more ;) )
-* Take a look in the `vars.yml`, adapt it (maybe save your config to a new file, e.g. `vars_newhostname.yml` and link this vars-file to `vars.yml`: `ln -s vars_newhostname.yml vars.yml`)
+* Take a look in the `vars.yml`, adapt it. Maybe save your config to a new file, e.g. `vars_newhostname.yml`, and link this file to `vars.yml`
+--> `ln -s vars_newhostname.yml vars.yml`
 
-## Run the playbook
+### Run the playbook
 ~~~
 cd cmd-install-archlinux-onkvm && ansible-playbook -i inventory -l archiso main.yml -k
 ~~~
