@@ -1,0 +1,2 @@
+[archlinux]
+archiso                ansible_host=localhost
