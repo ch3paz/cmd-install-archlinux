@@ -61,7 +61,7 @@ pacman -Sy && pacman -S ansible sshpass git --noconfirm
 
 ### Clone the playbook, adapt the URL to your needs
 ~~~
-git clone https://gitlab.chepnet.lan/chepaz/cmd-install-archlinux-onkvm.git
+git clone https://github.com/ch3paz/cmd-install-archlinux.git
 ~~~
 
 ### Prerequisites
