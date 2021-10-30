@@ -22,6 +22,10 @@ The idea here is:
 
 # Example
 
+In the archiso-environment run:
+
 ~~~
-ansible-playbook -i inventory main.yml -l cubox -K
+pacman -Sy && pacman -S ansible
+git clone https://gitlab.chepnet.lan/chepaz/cmd-install-archlinux-onkvm.git
+ansible-playbook -i inventory -l archiso main.yml 
 ~~~
