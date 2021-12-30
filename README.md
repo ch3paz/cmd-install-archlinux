@@ -29,7 +29,7 @@ Just boot archiso
 
 ## SSH into archiso
 
-To make copy&paste easier change roots password and SSH into the booted archiso:
+To make copy & paste easier change the root password and SSH into the booted archiso:
 
 ~~~
 root@archiso ~ # passwd
@@ -66,33 +66,26 @@ git clone https://github.com/ch3paz/cmd-install-archlinux.git
 
 ### Prerequisites
 
-* Take a look into `main.yml` if you need to change locale or packages (or maybe more ;) )
-* Take a look in the `vars.yml`, adapt it. Maybe save your config to a new file, e.g. `vars_newhostname.yml`, and link this file to `vars.yml`
---> `ln -s vars_newhostname.yml vars.yml`
+Cd into the cloned dir
+
+~~~
+cd cmd-install-archlinux
+~~~
+
+and
+
+* Modify `main.yml` if you need to change locale or packages (or even more ;) )
+* Modify `vars.yml`, adapt it. Maybe save your config to a new file, e.g. `vars_newhostname.yml`, and link this file to `vars.yml` --> `ln -s vars_newhostname.yml vars.yml`
 
 ### Run the playbook
 ~~~
-cd cmd-install-archlinux
 export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook -i inventory -l archiso main.yml -k
 ~~~
 
 # Troubleshooting
 
-Most of the time the packages on the iso are outdated for ansible. You may try `pacman -Syu` and update everything, but you may also try to break things down like described below, and install only the neccessary packages to get ansible to work.
-Never the less, an partial update can break other things too (this is how Archlinux works by design :) )
+In case you see errors like `ImportError: No module named ansible` then the packages on the iso are outdated for ansible or the iso is to old.
 
-## `ImportError: No module named ansible` or something similar
+You may try to update the packages with `pacman -Syu` but this might not work in all cases as this also updates the kernel.
 
-You may update & reinstall all installed python-packages with this ugly line in one shot: 
-
-~~~
-pacman -Sy $(pacman -Qi | grep Name | cut -d ":" -f 2 | grep python- | xargs)
-~~~
-
-## `ImportError: libffi.so.8: cannot open shared object file: No such file or directory` 
-
-`libffi` is outdated, update it (and its dependencies) with:
-
-~~~
-pacman -Sy libffi glib2
-~~~
+If this doesn't help, try the latest install-iso or build your own one with archiso and integrate ansible, git and sshpass.
