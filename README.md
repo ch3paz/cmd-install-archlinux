@@ -72,5 +72,26 @@ git clone https://github.com/ch3paz/cmd-install-archlinux.git
 
 ### Run the playbook
 ~~~
-cd cmd-install-archlinux && ansible-playbook -i inventory -l archiso main.yml -k
+cd cmd-install-archlinux
+export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook -i inventory -l archiso main.yml -k
+~~~
+
+# Troubleshooting
+
+Most of the time the packages on the iso are outdated for ansible. You may try `pacman -Syu` and update everything, but you may also try to break things down like described below, and install only the neccessary packages to get ansible to work.
+
+## `ImportError: No module named ansible` or something similar
+
+You may update & reinstall all installed python-packages with this ugly line in one shot: 
+
+~~~
+pacman -Sy $(pacman -Qi | grep Name | cut -d ":" -f 2 | grep python- | xargs)
+~~~
+
+## `ImportError: libffi.so.8: cannot open shared object file: No such file or directory` 
+
+`libffi` is outdated, update it (and its dependencies) with:
+
+~~~
+pacman -Sy libffi glib2
 ~~~
