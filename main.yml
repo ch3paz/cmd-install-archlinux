@@ -222,9 +222,9 @@
         mode: 0644
       tags: disable_for_testing
 
-    - name: Update bootloader
-      command: arch-chroot /mnt bootctl update
-      tags: disable_for_testing
+#    - name: Update bootloader
+#      command: arch-chroot /mnt bootctl update
+#      tags: disable_for_testing
 
     - name: Modify dhcpcd.conf to send/register hostname in DNS/DHCP-server
       lineinfile:
