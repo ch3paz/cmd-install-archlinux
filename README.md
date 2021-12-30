@@ -72,5 +72,5 @@ git clone https://github.com/ch3paz/cmd-install-archlinux.git
 
 ### Run the playbook
 ~~~
-cd cmd-install-archlinux-onkvm && ansible-playbook -i inventory -l archiso main.yml -k
+cd cmd-install-archlinux && ansible-playbook -i inventory -l archiso main.yml -k
 ~~~
