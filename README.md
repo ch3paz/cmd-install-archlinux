@@ -79,6 +79,7 @@ export ANSIBLE_HOST_KEY_CHECKING=False && ansible-playbook -i inventory -l archi
 # Troubleshooting
 
 Most of the time the packages on the iso are outdated for ansible. You may try `pacman -Syu` and update everything, but you may also try to break things down like described below, and install only the neccessary packages to get ansible to work.
+Never the less, an partial update can break other things too (this is how Archlinux works by design :) )
 
 ## `ImportError: No module named ansible` or something similar
 
